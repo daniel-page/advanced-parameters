@@ -42,20 +42,12 @@ ICON_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource
 local_handlers = []
 
 
-def focus_on(_):
-    """GUI focus state changed to True"""
+def delete_parameter(row_number):
+    """Removes a user parameter"""
 
-    global gui_in_focus
+    global parameters
 
-    gui_in_focus = True
-
-
-def focus_off(_):
-    """GUI focus state changed to False"""
-
-    global gui_in_focus
-
-    gui_in_focus = False
+    parameters[row_number].deleteMe()
 
 
 def createScaleBlock(window, row_number, parameter_label):
@@ -90,13 +82,39 @@ def createScaleBlock(window, row_number, parameter_label):
         else ...,
     )
 
-    button_delete = Button(window, text="Delete")
+    button_delete = Button(
+        window, text="Delete", command=lambda: delete_parameter(row_number)
+    )
     button_delete.grid(row=row_number, column=4, pady=(17, 0), padx=(0, 20))
 
     button_update = Button(window, text="Update")
     button_update.grid(row=row_number, column=5, pady=(17, 0), padx=(0, 20))
 
     return slider
+
+
+def add_parameter(name, value):
+    """Adds a user parameter"""
+
+    global parameters
+
+    parameters.add(name, adsk.core.ValueInput.createByString(value), "mm", "")
+
+
+def focus_on(_):
+    """GUI focus state changed to True"""
+
+    global gui_in_focus
+
+    gui_in_focus = True
+
+
+def focus_off(_):
+    """GUI focus state changed to False"""
+
+    global gui_in_focus
+
+    gui_in_focus = False
 
 
 def updateParameters():
@@ -117,14 +135,24 @@ def updateParameters():
             scaleBlocks.append(createScaleBlock(window, i, parameters.item(i).name))
             scaleBlocks[i].set(parameters.item(i).value * 10)
 
-        entry_add = Entry(window)
-        entry_add.grid(row=i + 1, column=0, columnspan=3, sticky=W + E, padx=(20, 0))
+        label_add_name = Label(window, text="Name: ")
+        label_add_name.grid(row=i + 1, column=0, sticky=W + E, padx=(20, 0))
+
+        entry_add_name = Entry(window)
+        entry_add_name.grid(row=i + 1, column=1, sticky=W + E, padx=(20, 0))
+
+        label_add_value = Label(window, text="Value: ")
+        label_add_value.grid(row=i + 1, column=2, sticky=W + E, padx=(20, 0))
+
+        entry_add_value = Entry(window)
+        entry_add_value.grid(row=i + 1, column=3, sticky=W + E, padx=(20, 0))
 
         button_add = Button(
             window,
             text="Add",
+            command=lambda: add_parameter(entry_add_name.get(), entry_add_value.get()),
         )
-        button_add.grid(row=i + 1, column=4, padx=(0, 20))
+        button_add.grid(row=i + 1, column=5, padx=(0, 20))
 
     if len(parameters) == len(scaleBlocks) > 0 and gui_in_focus:
         for i, _ in enumerate(parameters):
