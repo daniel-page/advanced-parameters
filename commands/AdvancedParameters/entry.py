@@ -122,6 +122,10 @@ def updateParameters():
 
     global scaleBlocks, parameters, window, last_num_parameters, gui_in_focus
 
+    product = app.activeProduct
+    design = adsk.fusion.Design.cast(product)
+    parameters = design.userParameters
+
     # Checks if there is a change in the number of parameters
     if last_num_parameters != len(parameters):
         last_num_parameters = len(parameters)
@@ -131,34 +135,37 @@ def updateParameters():
 
         scaleBlocks = []
 
-        for i, _ in enumerate(parameters):
-            scaleBlocks.append(createScaleBlock(window, i, parameters.item(i).name))
-            scaleBlocks[i].set(parameters.item(i).value * 10)
+        if len(parameters) > 0:
+            for i, _ in enumerate(parameters):
+                scaleBlocks.append(createScaleBlock(window, i, parameters.item(i).name))
+                scaleBlocks[i].set(parameters.item(i).value * 10)
 
-        label_add_name = Label(window, text="Name: ")
-        label_add_name.grid(row=i + 1, column=0, sticky=W + E, padx=(20, 0))
+            label_add_name = Label(window, text="Name: ")
+            label_add_name.grid(row=i + 1, column=0, sticky=W + E, padx=(20, 0))
 
-        entry_add_name = Entry(window)
-        entry_add_name.grid(row=i + 1, column=1, sticky=W + E, padx=(20, 0))
+            entry_add_name = Entry(window)
+            entry_add_name.grid(row=i + 1, column=1, sticky=W + E, padx=(20, 0))
 
-        label_add_value = Label(window, text="Value: ")
-        label_add_value.grid(row=i + 1, column=2, sticky=W + E, padx=(20, 0))
+            label_add_value = Label(window, text="Value: ")
+            label_add_value.grid(row=i + 1, column=2, sticky=W + E, padx=(20, 0))
 
-        entry_add_value = Entry(window)
-        entry_add_value.grid(row=i + 1, column=3, sticky=W + E, padx=(20, 0))
+            entry_add_value = Entry(window)
+            entry_add_value.grid(row=i + 1, column=3, sticky=W + E, padx=(20, 0))
 
-        button_add = Button(
-            window,
-            text="Add",
-            command=lambda: add_parameter(entry_add_name.get(), entry_add_value.get()),
-        )
-        button_add.grid(row=i + 1, column=5, padx=(0, 20))
+            button_add = Button(
+                window,
+                text="Add",
+                command=lambda: add_parameter(
+                    entry_add_name.get(), entry_add_value.get()
+                ),
+            )
+            button_add.grid(row=i + 1, column=5, padx=(0, 20))
 
-    if len(parameters) == len(scaleBlocks) > 0 and gui_in_focus:
+    if len(parameters) == len(scaleBlocks) and gui_in_focus:
         for i, _ in enumerate(parameters):
             parameters.item(i).value = scaleBlocks[i].get() / 10
 
-    window.after(100, updateParameters)  # Runs the function again after 100ms
+    window.after(80, updateParameters)  # Runs the function again after 100ms
 
 
 def externalWindow():
@@ -178,8 +185,7 @@ def externalWindow():
     window.bind("<Leave>", focus_off)  # Mouse exits the gui
 
     last_num_parameters = None
-    if len(parameters) > 0:
-        updateParameters()
+    updateParameters()
 
     window.columnconfigure(1, weight=1)  # Allow widgets to expand to full width
 
@@ -192,16 +198,9 @@ def externalWindow():
 # Executed when add-in is run.
 def start():
 
-    product = app.activeProduct
-    design = adsk.fusion.Design.cast(product)
-
     # if not design:
     #     ui.messageBox("A Fusion design must be active when invoking this command.")
     #     return ()
-
-    global parameters
-
-    parameters = design.userParameters
 
     # ******************************** Create Command Definition ********************************
     cmd_def = ui.commandDefinitions.addButtonDefinition(
