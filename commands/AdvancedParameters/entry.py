@@ -177,7 +177,7 @@ def updateParameters():
 def externalWindow():
     """Opens and intialises an external window"""
 
-    global parameters, scaleBlocks, window, last_num_parameters, gui_in_focus
+    global parameters, scaleBlocks, window, last_num_parameters, gui_in_focus, entry_add_value
 
     window = Tk()
     window.title("Advanced Parameters")
@@ -197,8 +197,15 @@ def externalWindow():
 
     window.mainloop()  # Starts the gui (blocking method)
 
-    del scaleBlocks  # Resets the sliders when gui closed
-    del window  # Resets tkinter global instance
+    # Resets created global variables after the gui is closed
+    del scaleBlocks
+    del window
+    del gui_in_focus
+    del last_num_parameters
+    if "entry_add_value" in globals():
+        del entry_add_value
+    if "parameters" in globals():
+        del parameters
 
 
 # Executed when add-in is run.
