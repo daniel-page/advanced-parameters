@@ -53,6 +53,8 @@ def delete_parameter(row_number):
 def createScaleBlock(window, row_number, parameter_label):
     """Generates a row of information and controls for a parameter"""
 
+    global entry_add_value
+
     length_label = Label(window, text=parameter_label)
     length_label.grid(row=row_number, column=0, pady=(17, 0), padx=(0, 10))
 
@@ -87,7 +89,11 @@ def createScaleBlock(window, row_number, parameter_label):
     )
     button_delete.grid(row=row_number, column=4, pady=(17, 0), padx=(0, 20))
 
-    button_update = Button(window, text="Update")
+    button_update = Button(
+        window,
+        text="Update",
+        command=lambda: slider.set(entry_add_value.get()),
+    )
     button_update.grid(row=row_number, column=5, pady=(17, 0), padx=(0, 20))
 
     return slider
@@ -120,7 +126,7 @@ def focus_off(_):
 def updateParameters():
     """Syncs parameters between the Fusion360 workspace and the external window GUI"""
 
-    global scaleBlocks, parameters, window, last_num_parameters, gui_in_focus
+    global scaleBlocks, parameters, window, last_num_parameters, gui_in_focus, entry_add_value
 
     product = app.activeProduct
     design = adsk.fusion.Design.cast(product)
