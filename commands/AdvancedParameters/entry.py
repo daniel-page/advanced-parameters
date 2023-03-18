@@ -107,26 +107,10 @@ def add_parameter(name, value):
     parameters.add(name, adsk.core.ValueInput.createByString(value), "mm", "")
 
 
-def focus_on(_):
-    """GUI focus state changed to True"""
-
-    global gui_in_focus
-
-    gui_in_focus = True
-
-
-def focus_off(_):
-    """GUI focus state changed to False"""
-
-    global gui_in_focus
-
-    gui_in_focus = False
-
-
 def updateParameters():
     """Syncs parameters between the Fusion360 workspace and the external window GUI"""
 
-    global scaleBlocks, parameters, window, last_num_parameters, gui_in_focus, entry_add_value
+    global scaleBlocks, parameters, window, last_num_parameters, entry_add_value
 
     product = app.activeProduct
     design = adsk.fusion.Design.cast(product)
@@ -167,28 +151,31 @@ def updateParameters():
             )
             button_add.grid(row=i + 1, column=5, padx=(0, 20))
 
-    if len(parameters) == len(scaleBlocks) and gui_in_focus:
+    if len(parameters) == len(scaleBlocks):
         for i, _ in enumerate(parameters):
-            parameters.item(i).value = scaleBlocks[i].get() / 10
+            if (
+                round(parameters.item(i).value, 2)
+                != round(scaleBlocks[i].get() / 10, 2)
+                and len(ui.activeSelections) == 0
+            ):
+                slider_val = scaleBlocks[i].get() / 10
+                param_val = parameters.item(i)
+                param_val.value = round(slider_val, 2)
 
-    window.after(80, updateParameters)  # Runs the function again after 100ms
+    window.after(150, updateParameters)  # Runs the function again after a time
 
 
 def externalWindow():
     """Opens and intialises an external window"""
 
-    global parameters, scaleBlocks, window, last_num_parameters, gui_in_focus, entry_add_value
+    global parameters, scaleBlocks, window, last_num_parameters, entry_add_value
 
     window = Tk()
     window.title("Advanced Parameters")
     window.iconbitmap(
         os.path.dirname(os.path.abspath(__file__)) + "\\resources\\16x16.ico"
     )
-
-    # Mouse position monitored to prevent conflicts occuring if dimensions/parameters are changed in the Fusion360 workspace
-    gui_in_focus = False
-    window.bind("<Enter>", focus_on)  # Mouse enters the gui
-    window.bind("<Leave>", focus_off)  # Mouse exits the gui
+    window.attributes("-topmost", True)
 
     last_num_parameters = None
     updateParameters()
@@ -200,7 +187,6 @@ def externalWindow():
     # Resets created global variables after the gui is closed
     del scaleBlocks
     del window
-    del gui_in_focus
     del last_num_parameters
     if "entry_add_value" in globals():
         del entry_add_value
