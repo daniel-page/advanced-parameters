@@ -8,8 +8,8 @@ An add-in for Autodesk Fusion 360 to help with prototyping.
 
 ## Features
 
-- Slider bars to intuitively adjust user parameters (click and drag or scrolling)
-- Add, remove or update parameters
+- Slider bars to intuitively adjust user parameters (click, drag or scroll)
+- Add, remove or update user parameters
 - Automatic syncing of objects/parameters between the workspace and the add-in window
 - A window that stays open while you edit sketches or if you switch between designs
 
@@ -18,17 +18,20 @@ An add-in for Autodesk Fusion 360 to help with prototyping.
 Tested on:
 
 - Windows 10 Pro 22H2 (19045.2604)
-- Fusion 360 v2.0.15509 x86_64
+- Autodesk Fusion 360 v2.0.15509 x86_64
 
 ## Installation
 
-- UTILITIES toolbar tab > ADD-INS > Add-Ins tab > + button
-- Select to run at startup (Optional)
+1. Download [this repository](https://github.com/daniel-page/advanced-parameters-fusion-360-add-in/archive/refs/heads/main.zip) and extract the archive
+1. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > **+** button
+1. Locate and choose where the repository
+1. Select **Run on Startup** (Optional)
 
 ## Running
 
-- UTILITIES toolbar tab > ADD-INS > Add-Ins tab
-- Highlight the Advanced Parameters in the list
-- Press Run
-- Go to the SOLID toolbar tab
-- Click on the red fx icon in the MODIFY panel
+1. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab
+2. Click **Advanced Parameters** in the list to highlight
+3. Click **Run**
+4. Go to the **SOLID** toolbar tab
+5. Click on the red fx icon in the **MODIFY** panel
+6. A window that always stays on top will load
