@@ -20,6 +20,7 @@ import threading
 
 app = adsk.core.Application.get()
 ui = app.userInterface
+isWindowOpen = False
 
 CMD_NAME = "Advanced Parameters"
 CMD_ID = f"{config.COMPANY_NAME}_{config.ADDIN_NAME}_{CMD_NAME}"
@@ -126,30 +127,69 @@ def updateParameters():
         scaleBlocks = []
 
         if len(parameters) > 0:
-            for i, _ in enumerate(parameters):
-                scaleBlocks.append(createScaleBlock(window, i, parameters.item(i).name))
-                scaleBlocks[i].set(parameters.item(i).value * 10)
 
-            label_add_name = Label(window, text="Name: ")
-            label_add_name.grid(row=i + 1, column=0, sticky=W + E, padx=(20, 0))
+            frame = Frame(window)
+            frame.grid(row=0, column=0, columnspan=8, padx=(0, 0), pady=(10, 0))
 
-            entry_add_name = Entry(window)
-            entry_add_name.grid(row=i + 1, column=1, sticky=W + E, padx=(20, 0))
+            label_add_name = Label(frame, text="Name: ")
+            label_add_name.grid(row=0, column=0, sticky=W + E, padx=(20, 0))
 
-            label_add_value = Label(window, text="Value: ")
-            label_add_value.grid(row=i + 1, column=2, sticky=W + E, padx=(20, 0))
+            entry_add_name = Entry(frame)
+            entry_add_name.grid(row=0, column=1, sticky=W + E, padx=(20, 0))
 
-            entry_add_value = Entry(window)
-            entry_add_value.grid(row=i + 1, column=3, sticky=W + E, padx=(20, 0))
+            label_add_value = Label(frame, text="Value: ")
+            label_add_value.grid(row=0, column=2, sticky=W + E, padx=(20, 0))
+
+            entry_add_value = Entry(frame)
+            entry_add_value.grid(row=0, column=3, sticky=W + E, padx=(20, 0))
+
+            label_add_comment = Label(frame, text="Comment: ")
+            label_add_comment.grid(row=0, column=4, sticky=W + E, padx=(20, 0))
+
+            entry_add_comment = Entry(frame)
+            entry_add_comment.grid(row=0, column=5, sticky=W + E, padx=(20, 0))
 
             button_add = Button(
-                window,
+                frame,
                 text="Add",
                 command=lambda: add_parameter(
                     entry_add_name.get(), entry_add_value.get()
                 ),
             )
-            button_add.grid(row=i + 1, column=5, padx=(0, 20))
+            button_add.grid(row=0, column=6, padx=(0, 20))
+
+            label_add_min = Label(frame, text="Min: ")
+            label_add_min.grid(row=1, column=0, sticky=W + E, padx=(20, 0))
+
+            spinbox_min = Spinbox(frame, from_=0, to=10)
+            spinbox_min.grid(row=1, column=1, sticky=W + E, padx=(20, 0))
+
+            label_add_min = Label(frame, text="Max: ")
+            label_add_min.grid(row=1, column=2, sticky=W + E, padx=(20, 0))
+
+            spinbox_min = Spinbox(frame, from_=0, to=10)
+            spinbox_min.grid(row=1, column=3, sticky=W + E, padx=(20, 0))
+
+            label_add_min = Label(frame, text="Increment: ")
+            label_add_min.grid(row=1, column=4, sticky=W + E, padx=(20, 0))
+
+            spinbox_min = Spinbox(frame, from_=0, to=10)
+            spinbox_min.grid(row=1, column=5, sticky=W + E, padx=(20, 0))
+
+            button_apply = Button(
+                frame,
+                text="Apply",
+                command=lambda: add_parameter(
+                    entry_add_name.get(), entry_add_value.get()
+                ),
+            )
+            button_apply.grid(row=1, column=6, padx=(0, 20))
+
+            for i, _ in enumerate(parameters):
+                scaleBlocks.append(
+                    createScaleBlock(window, i + 1, parameters.item(i).name)
+                )
+                scaleBlocks[i].set(parameters.item(i).value * 10)
 
     if len(parameters) == len(scaleBlocks):
         for i, _ in enumerate(parameters):
@@ -163,6 +203,12 @@ def updateParameters():
                 param_val.value = round(slider_val, 2)
 
     window.after(150, updateParameters)  # Runs the function again after a time
+
+
+def on_closing():
+    global window, isWindowOpen
+    isWindowOpen = False
+    window.destroy()
 
 
 def externalWindow():
@@ -181,6 +227,7 @@ def externalWindow():
     updateParameters()
 
     window.columnconfigure(1, weight=1)  # Allow widgets to expand to full width
+    window.protocol("WM_DELETE_WINDOW", on_closing)
 
     window.mainloop()  # Starts the gui (blocking method)
 
@@ -273,8 +320,12 @@ def command_created(args: adsk.core.CommandCreatedEventArgs):
 
 # This function will be called when the user hits the OK button in the command dialog
 def command_execute(args: adsk.core.CommandEventArgs):
-    window_process = threading.Thread(target=externalWindow)
-    window_process.start()
+    global isWindowOpen
+
+    if not isWindowOpen:
+        window_process = threading.Thread(target=externalWindow)
+        window_process.start()
+        isWindowOpen = True
     futil.log(f"{CMD_NAME} Command Execute Event")
     # msg = f"Hello World"
     # ui.messageBox(msg)
