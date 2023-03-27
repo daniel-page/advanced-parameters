@@ -1,6 +1,6 @@
 <img align="left" width="70" height="70" src="/commands/AdvancedParameters/resources/64x64.png" alt="Advanced Parameters">
 
-## Advanced Parameters
+# Advanced Parameters
 
 An add-in for Autodesk Fusion 360 to help with prototyping.
 
@@ -24,7 +24,7 @@ Tested on:
 
 1. Download [this repository](https://github.com/daniel-page/advanced-parameters-fusion-360-add-in/archive/refs/heads/main.zip) and extract the archive
 1. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > **+** button
-1. Locate and choose where the repository
+1. Locate and choose the repository
 1. Select **Run on Startup** (Optional)
 
 ## Running
