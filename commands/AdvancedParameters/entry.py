@@ -5,7 +5,9 @@ from ... import config
 from ...lib import fusion360utils as futil
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 import threading
+import traceback
 
 app = adsk.core.Application.get()
 ui = app.userInterface
@@ -32,23 +34,136 @@ ICON_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resource
 local_handlers = []
 
 
-def delete_parameter(row_number):
+def addParameter(name, value, comment):
+    """Adds a user parameter"""
+
+    global parameters
+
+    try:
+        parameters.add(name, adsk.core.ValueInput.createByString(value), "mm", comment)
+    except RuntimeError as err:
+        messagebox.showwarning("Runtime Error", err)
+
+
+def deleteParameter(row_number):
     """Removes a user parameter"""
 
     global parameters
 
-    parameters[row_number].deleteMe()
+    delete_succesful = parameters[row_number].deleteMe()
+
+    if not delete_succesful:
+        messagebox.showinfo(
+            "Info",
+            "Deletion of this parameter was unsuccessful. This is likely due to it being used in the workspace.",
+        )
 
 
-def createScaleBlock(window, row_number, parameter_label):
+def updateParameter(row_number, slider, comment, name):
+    """Update the value/comment/name of a parameter"""
+
+    global scaleBlocks, parameters, entry_add_value, entry_add_comment, entry_add_name, spinbox_max, spinbox_min
+
+    comment_input = entry_add_comment.get()
+    if len(comment_input) > 0:
+        comment.configure(text=comment_input)
+        parameters[row_number].comment = comment_input
+        scaleBlocks[row_number][3].grid(
+            row=1,
+            column=0,
+            sticky=W,
+            pady=(0, 0),
+            padx=(0, 0),
+            columnspan=10,
+        )
+    else:
+        scaleBlocks[row_number][3].grid_remove()
+
+    name_input = entry_add_name.get()
+    if len(name_input) > 0:
+        name.configure(text=name_input)
+        parameters[row_number].name = name_input
+
+    value_input = entry_add_value.get()
+    if len(value_input) > 0:
+        if float(value_input) > float(spinbox_max.get()):
+            spinbox_max.delete(0, 20)
+            spinbox_max.insert(0, value_input)
+            updateSettings()
+        elif float(value_input) < float(spinbox_min.get()):
+            spinbox_min.delete(0, 20)
+            spinbox_min.insert(0, value_input)
+            updateSettings()
+        slider.set(value_input)
+
+
+def updateSettings():
+    """Updates window to reflect changed settings"""
+
+    global scaleBlocks, spinbox_min, spinbox_max, spinbox_increment
+
+    try:
+        if (
+            scaleBlocks != None
+            and spinbox_min != None
+            and spinbox_max != None
+            and spinbox_increment != None
+        ):
+            for row_number, _ in enumerate(scaleBlocks):
+                scaleBlocks[row_number][0].configure(
+                    from_=float(spinbox_min.get()),
+                    to=float(spinbox_max.get()),
+                    resolution=float(spinbox_increment.get()),
+                )
+                scaleBlocks[row_number][1].configure(text=spinbox_min.get())
+                scaleBlocks[row_number][2].configure(text=spinbox_max.get())
+    except ValueError as err:
+        messagebox.showwarning("Value Error", err)
+
+
+def queueSettingsUpdate():
+    """Queues an update for min/min/increment settings in the mainloop"""
+
+    global is_settings_update
+
+    is_settings_update = True
+
+
+def createScaleBlock(window, row_number):
     """Generates a row of information and controls for a parameter"""
 
-    global entry_add_value, spinbox_min, spinbox_max, spinbox_increment
+    global parameters, entry_add_value, spinbox_min, spinbox_max, spinbox_increment
 
-    length_label = Label(window, text=parameter_label, width=8, anchor="w")
-    length_label.grid(
+    length_details = Frame(window)
+    length_details.grid(
         row=row_number, column=0, sticky=W, pady=(17, 0), padx=(0, 20), columnspan=10
     )
+    length_label = Label(
+        length_details, text=parameters.item(row_number).name, width=8, anchor="w"
+    )
+    length_label.grid(
+        row=0, column=0, sticky=W, pady=(0, 0), padx=(0, 0), columnspan=10
+    )
+
+    comment_label = Label(
+        length_details,
+        text=parameters.item(row_number).comment,
+        font=("Arial", 7),
+        width=8,
+        state="disabled",
+        anchor="w",
+    )
+
+    # Only show comment if one exists
+    if len(parameters.item(row_number).comment) > 0:
+        comment_label.grid(
+            row=1,
+            column=0,
+            sticky=W,
+            pady=(0, 0),
+            padx=(0, 0),
+            columnspan=10,
+        )
 
     slider_min = Label(window, text=spinbox_min.get(), width=4)
     slider_min.grid(row=row_number, column=10, pady=(17, 0), columnspan=10)
@@ -78,7 +193,7 @@ def createScaleBlock(window, row_number, parameter_label):
     )
 
     button_delete = Button(
-        window, text="Delete", width=6, command=lambda: delete_parameter(row_number)
+        window, text="Delete", width=6, command=lambda: deleteParameter(row_number)
     )
     button_delete.grid(
         row=row_number, column=40, pady=(17, 0), padx=(0, 20), columnspan=10
@@ -88,225 +203,206 @@ def createScaleBlock(window, row_number, parameter_label):
         window,
         text="Update",
         width=6,
-        command=lambda: slider.set(entry_add_value.get()),
+        command=lambda: updateParameter(
+            row_number, slider, comment_label, length_label
+        ),
     )
     button_update.grid(
         row=row_number, column=50, pady=(17, 0), padx=(0, 0), columnspan=10
     )
 
-    return slider, slider_min, slider_max
-
-
-def addParameter(name, value):
-    """Adds a user parameter"""
-
-    global parameters
-
-    parameters.add(name, adsk.core.ValueInput.createByString(value), "mm", "")
-
-
-def updateSettings():
-    """Updates window to reflect changed settings"""
-    global scaleBlocks, spinbox_min, spinbox_max, spinbox_increment
-
-    if (
-        scaleBlocks != None
-        and spinbox_min != None
-        and spinbox_max != None
-        and spinbox_increment != None
-    ):
-        for i, _ in enumerate(scaleBlocks):
-            scaleBlocks[i][0].configure(
-                from_=float(spinbox_min.get()),
-                to=float(spinbox_max.get()),
-                resolution=float(spinbox_increment.get()),
-            )
-            scaleBlocks[i][1].configure(text=spinbox_min.get())
-            scaleBlocks[i][2].configure(text=spinbox_max.get())
-
-
-def queueSettingsUpdate():
-    """Queues an update for min/min/increment settings in the mainloop"""
-
-    global is_settings_update
-
-    is_settings_update = True
+    return slider, slider_min, slider_max, comment_label
 
 
 def updateWindow():
     """Syncs parameters between the Fusion360 workspace and the external window GUI"""
 
-    global scaleBlocks, parameters, window, last_num_parameters, entry_add_value, spinbox_min, spinbox_max, spinbox_increment, is_settings_update
+    global scaleBlocks, parameters, window, last_num_parameters, entry_add_value, entry_add_name
+    global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment
 
-    product = app.activeProduct
-    design = adsk.fusion.Design.cast(product)
-    parameters = design.userParameters
+    try:
+        product = app.activeProduct
+        design = adsk.fusion.Design.cast(product)
+        parameters = design.userParameters
 
-    if is_settings_update:
-        updateSettings()
-        is_settings_update = False
+        if is_settings_update:
+            updateSettings()
+            is_settings_update = False
 
-    # Checks if there is a change in the number of parameters
-    if last_num_parameters != len(parameters):
-        last_num_parameters = len(parameters)
+        # Checks if there is a change in the number of parameters
+        if last_num_parameters != len(parameters):
+            last_num_parameters = len(parameters)
 
-        for l in window.grid_slaves():
-            l.destroy()
+            for widget in window.grid_slaves():
+                widget.destroy()
 
-        scaleBlocks = []
+            scaleBlocks = []
 
-        if len(parameters) > 0:
+            if len(parameters) > 0:
 
-            window_top = Frame(window)
-            window_top.grid(row=0, column=0, columnspan=70, padx=(10, 10), pady=(10, 0))
-
-            label_add_name = Label(window_top, text="Name: ", anchor="w")
-            label_add_name.grid(row=0, column=0, sticky=W, padx=(0, 5), columnspan=10)
-
-            entry_add_name = Entry(
-                window_top,
-                width=15,
-                relief=FLAT,
-                highlightbackground="grey",
-                highlightthickness=1,
-            )
-            entry_add_name.grid(row=0, column=10, sticky=W, padx=(0, 20), columnspan=10)
-
-            label_add_value = Label(window_top, text="Value: ", anchor="w")
-            label_add_value.grid(row=0, column=20, sticky=W, padx=(0, 5), columnspan=10)
-
-            entry_add_value = Entry(
-                window_top,
-                width=15,
-                relief=FLAT,
-                highlightbackground="grey",
-                highlightthickness=1,
-            )
-            entry_add_value.grid(
-                row=0, column=30, sticky=W, padx=(0, 20), columnspan=10
-            )
-
-            label_add_comment = Label(window_top, text="Comment: ", anchor="w")
-            label_add_comment.grid(
-                row=0, column=40, sticky=W, padx=(0, 5), columnspan=10
-            )
-
-            entry_add_comment = Entry(
-                window_top,
-                width=15,
-                relief=FLAT,
-                highlightbackground="grey",
-                highlightthickness=1,
-            )
-            entry_add_comment.grid(
-                row=0, column=50, sticky=W, padx=(0, 20), columnspan=10
-            )
-
-            button_add = Button(
-                window_top,
-                text="Add",
-                width=6,
-                command=lambda: addParameter(
-                    entry_add_name.get(), entry_add_value.get()
-                ),
-            )
-            button_add.grid(row=0, column=60, padx=(0, 0), columnspan=10)
-
-            label_add_min = Label(window_top, text="Min: ", anchor="w")
-            label_add_min.grid(
-                row=1, column=0, sticky=W, padx=(0, 5), pady=(6, 0), columnspan=10
-            )
-
-            spinbox_min = ttk.Spinbox(
-                window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
-            )
-            spinbox_min.grid(
-                row=1,
-                column=10,
-                sticky=W + E,
-                padx=(0, 20),
-                pady=(6, 0),
-                columnspan=10,
-            )
-            spinbox_min.delete(0)
-            spinbox_min.insert(0, "5")
-
-            label_add_max = Label(window_top, text="Max: ", anchor="w")
-            label_add_max.grid(
-                row=1,
-                column=20,
-                sticky=W + E,
-                padx=(0, 5),
-                pady=(6, 0),
-                columnspan=10,
-            )
-
-            spinbox_max = ttk.Spinbox(
-                window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
-            )
-            spinbox_max.grid(
-                row=1,
-                column=30,
-                sticky=W + E,
-                padx=(0, 20),
-                pady=(6, 0),
-                columnspan=10,
-            )
-            spinbox_max.delete(0)
-            spinbox_max.insert(0, "100")
-
-            label_add_min = Label(window_top, text="Increment: ", anchor="w")
-            label_add_min.grid(
-                row=1,
-                column=40,
-                sticky=W + E,
-                padx=(0, 5),
-                pady=(6, 0),
-                columnspan=10,
-            )
-
-            spinbox_increment = ttk.Spinbox(
-                window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
-            )
-            spinbox_increment.grid(
-                row=1,
-                column=50,
-                sticky=W + E,
-                padx=(0, 20),
-                pady=(6, 0),
-                columnspan=10,
-            )
-            spinbox_increment.delete(0)
-            spinbox_increment.insert(0, "2")
-
-            button_apply = Button(
-                window_top, text="Apply", width=6, command=updateSettings
-            )
-            button_apply.grid(row=1, column=60, padx=(0, 0), pady=(6, 0), columnspan=10)
-
-            window_bottom = Frame(window)
-            window_bottom.grid(
-                row=1, column=0, columnspan=70, padx=(10, 10), pady=(0, 10)
-            )
-
-            for i, _ in enumerate(parameters):
-                scaleBlocks.append(
-                    createScaleBlock(window_bottom, i, parameters.item(i).name)
+                window_top = Frame(window)
+                window_top.grid(
+                    row=0, column=0, columnspan=70, padx=(10, 10), pady=(10, 0)
                 )
-                scaleBlocks[i][0].set(parameters.item(i).value * 10)
 
-    if len(parameters) == len(scaleBlocks):
-        for i, _ in enumerate(parameters):
-            if (
-                round(parameters.item(i).value, 2)
-                != round(scaleBlocks[i][0].get() / 10, 2)
-                and len(ui.activeSelections) == 0
-            ):
-                slider_val = scaleBlocks[i][0].get() / 10
-                param_val = parameters.item(i)
-                param_val.value = round(slider_val, 2)
+                label_add_name = Label(window_top, text="Name: ", anchor="w")
+                label_add_name.grid(
+                    row=0, column=0, sticky=W, padx=(0, 5), columnspan=10
+                )
 
-    window.after(150, updateWindow)  # Runs the function again after a time
+                entry_add_name = Entry(
+                    window_top,
+                    width=15,
+                    relief=FLAT,
+                    highlightbackground="grey",
+                    highlightthickness=1,
+                )
+                entry_add_name.grid(
+                    row=0, column=10, sticky=W, padx=(0, 20), columnspan=10
+                )
+
+                label_add_value = Label(window_top, text="Value: ", anchor="w")
+                label_add_value.grid(
+                    row=0, column=20, sticky=W, padx=(0, 5), columnspan=10
+                )
+
+                entry_add_value = Entry(
+                    window_top,
+                    width=15,
+                    relief=FLAT,
+                    highlightbackground="grey",
+                    highlightthickness=1,
+                )
+                entry_add_value.grid(
+                    row=0, column=30, sticky=W, padx=(0, 20), columnspan=10
+                )
+
+                label_add_comment = Label(window_top, text="Comment: ", anchor="w")
+                label_add_comment.grid(
+                    row=0, column=40, sticky=W, padx=(0, 5), columnspan=10
+                )
+
+                entry_add_comment = Entry(
+                    window_top,
+                    width=15,
+                    relief=FLAT,
+                    highlightbackground="grey",
+                    highlightthickness=1,
+                )
+                entry_add_comment.grid(
+                    row=0, column=50, sticky=W, padx=(0, 20), columnspan=10
+                )
+
+                button_add = Button(
+                    window_top,
+                    text="Add",
+                    width=6,
+                    command=lambda: addParameter(
+                        entry_add_name.get(),
+                        entry_add_value.get(),
+                        entry_add_comment.get(),
+                    ),
+                )
+                button_add.grid(row=0, column=60, padx=(0, 0), columnspan=10)
+
+                label_add_min = Label(window_top, text="Min: ", anchor="w")
+                label_add_min.grid(
+                    row=1, column=0, sticky=W, padx=(0, 5), pady=(6, 0), columnspan=10
+                )
+
+                spinbox_min = ttk.Spinbox(
+                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                )
+                spinbox_min.grid(
+                    row=1,
+                    column=10,
+                    sticky=W + E,
+                    padx=(0, 20),
+                    pady=(6, 0),
+                    columnspan=10,
+                )
+                spinbox_min.delete(0)
+                spinbox_min.insert(0, "0")
+
+                label_add_max = Label(window_top, text="Max: ", anchor="w")
+                label_add_max.grid(
+                    row=1,
+                    column=20,
+                    sticky=W,
+                    padx=(0, 5),
+                    pady=(6, 0),
+                    columnspan=10,
+                )
+
+                spinbox_max = ttk.Spinbox(
+                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                )
+                spinbox_max.grid(
+                    row=1,
+                    column=30,
+                    sticky=W,
+                    padx=(0, 20),
+                    pady=(6, 0),
+                    columnspan=10,
+                )
+                spinbox_max.delete(0)
+                spinbox_max.insert(0, "1000")
+
+                label_add_min = Label(window_top, text="Increment: ", anchor="w")
+                label_add_min.grid(
+                    row=1,
+                    column=40,
+                    sticky=W,
+                    padx=(0, 5),
+                    pady=(6, 0),
+                    columnspan=10,
+                )
+
+                spinbox_increment = ttk.Spinbox(
+                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                )
+                spinbox_increment.grid(
+                    row=1,
+                    column=50,
+                    sticky=W,
+                    padx=(0, 20),
+                    pady=(6, 0),
+                    columnspan=10,
+                )
+                spinbox_increment.delete(0)
+                spinbox_increment.insert(0, "1")
+
+                button_apply = Button(
+                    window_top, text="Apply", width=6, command=updateSettings
+                )
+                button_apply.grid(
+                    row=1, column=60, padx=(0, 0), pady=(6, 0), columnspan=10
+                )
+
+                window_bottom = Frame(window)
+                window_bottom.grid(
+                    row=1, column=0, columnspan=70, padx=(10, 10), pady=(0, 10)
+                )
+
+                for i, _ in enumerate(parameters):
+                    scaleBlocks.append(createScaleBlock(window_bottom, i))
+                    scaleBlocks[i][0].set(parameters.item(i).value * 10)
+
+        if len(parameters) == len(scaleBlocks):
+            for i, _ in enumerate(parameters):
+                if (
+                    round(parameters.item(i).value, 2)
+                    != round(scaleBlocks[i][0].get() / 10, 2)
+                    and len(ui.activeSelections) == 0
+                ):
+                    slider_val = scaleBlocks[i][0].get() / 10
+                    param_val = parameters.item(i)
+                    param_val.value = round(slider_val, 2)
+
+        window.after(150, updateWindow)  # Runs the function again after a time
+
+    except RuntimeError:
+        window.destroy()  # This closes the window when Fusion 360 is closed
 
 
 def onClosing():
@@ -321,50 +417,56 @@ def onClosing():
 def externalWindow():
     """Opens and intialises an external window"""
 
-    global parameters, scaleBlocks, window, last_num_parameters, entry_add_value, spinbox_min, spinbox_max, spinbox_increment, is_settings_update
+    try:
 
-    entry_add_value = None
-    spinbox_max = None
-    spinbox_min = None
-    spinbox_increment = None
-    parameters = None
-    scaleBlocks = None
-    is_settings_update = False
+        global parameters, scaleBlocks, window, last_num_parameters, entry_add_value
+        global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment, entry_add_name
 
-    window = Tk()
-    window.title("Advanced Parameters")
-    window.iconbitmap(
-        os.path.dirname(os.path.abspath(__file__)) + "\\resources\\16x16.ico"
-    )
-    window.resizable(width=False, height=False)
-    window.attributes("-topmost", True)
+        entry_add_value = None
+        spinbox_max = None
+        spinbox_min = None
+        spinbox_increment = None
+        parameters = None
+        scaleBlocks = None
+        is_settings_update = False
+        entry_add_comment = None
+        entry_add_name = None
 
-    last_num_parameters = None
-    updateWindow()
+        window = Tk()
+        window.title("Advanced Parameters")
+        window.iconbitmap(
+            os.path.dirname(os.path.abspath(__file__)) + "\\resources\\16x16.ico"
+        )
+        window.resizable(width=False, height=False)
+        window.attributes("-topmost", True)
 
-    # window.columnconfigure(1, weight=1)  # Allow widgets to expand to full width
-    window.protocol("WM_DELETE_WINDOW", onClosing)
+        last_num_parameters = None
+        updateWindow()
 
-    window.mainloop()  # Starts the gui (blocking method)
+        # window.columnconfigure(1, weight=1)  # Allow widgets to expand to full width
+        window.protocol("WM_DELETE_WINDOW", onClosing)
 
-    # Resets created global variables after the gui is closed
-    del scaleBlocks
-    del window
-    del last_num_parameters
-    del entry_add_value
-    del parameters
-    del spinbox_min
-    del spinbox_max
-    del spinbox_increment
-    del is_settings_update
+        window.mainloop()  # Starts the gui (blocking method)
+
+        # Resets created global variables after the gui is closed
+        del scaleBlocks
+        del window
+        del last_num_parameters
+        del entry_add_value
+        del parameters
+        del spinbox_min
+        del spinbox_max
+        del spinbox_increment
+        del is_settings_update
+        del entry_add_comment
+        del entry_add_name
+
+    except:
+        messagebox.showerror("Error", traceback.format_exc())
 
 
 # Executed when add-in is run.
 def start():
-
-    # if not design:
-    #     ui.messageBox("A Fusion design must be active when invoking this command.")
-    #     return ()
 
     # ******************************** Create Command Definition ********************************
     cmd_def = ui.commandDefinitions.addButtonDefinition(
