@@ -86,15 +86,23 @@ def updateParameter(row_number, slider, comment, name):
 
     value_input = entry_add_value.get()
     if len(value_input) > 0:
-        if float(value_input) > float(spinbox_max.get()):
-            spinbox_max.delete(0, 20)
-            spinbox_max.insert(0, value_input)
-            updateSettings()
-        elif float(value_input) < float(spinbox_min.get()):
-            spinbox_min.delete(0, 20)
-            spinbox_min.insert(0, value_input)
-            updateSettings()
-        slider.set(value_input)
+        try:
+            parameters.item(row_number).expression = value_input
+
+            if parameters.item(row_number).value > float(spinbox_max.get()):
+                spinbox_max.delete(0, 20)
+                spinbox_max.insert(0, parameters.item(row_number).value)
+                updateSettings()
+            elif parameters.item(row_number).value < float(spinbox_min.get()):
+                spinbox_min.delete(0, 20)
+                spinbox_min.insert(0, parameters.item(row_number).value)
+                updateSettings()
+
+            slider.set(parameters.item(row_number).value * 10)
+        except NameError as err:
+            messagebox.showwarning("Name Error", err)
+        except TypeError as err:
+            messagebox.showwarning("Type Error", err)
 
 
 def updateSettings():
@@ -115,8 +123,12 @@ def updateSettings():
                     to=float(spinbox_max.get()),
                     resolution=float(spinbox_increment.get()),
                 )
-                scaleBlocks[row_number][1].configure(text=spinbox_min.get())
-                scaleBlocks[row_number][2].configure(text=spinbox_max.get())
+                scaleBlocks[row_number][1].configure(
+                    text="%g" % (float(spinbox_min.get()))
+                )
+                scaleBlocks[row_number][2].configure(
+                    text="%g" % (float(spinbox_max.get()))
+                )
     except ValueError as err:
         messagebox.showwarning("Value Error", err)
 
@@ -127,6 +139,20 @@ def queueSettingsUpdate():
     global is_settings_update
 
     is_settings_update = True
+
+
+def sliderMoved(row_number):
+    """Records whether a slider is moved by the user"""
+
+    global sliders_moved, sliders_lock
+
+    if not any(sliders_lock):
+        for i in range(len(sliders_lock)):  # Lock all other sliders
+            if i != row_number:
+                sliders_lock[i] = True
+
+    if not sliders_lock[row_number]:
+        sliders_moved[row_number] = True  # Records whether a slider has been moved
 
 
 def createScaleBlock(window, row_number):
@@ -174,6 +200,7 @@ def createScaleBlock(window, row_number):
         to=float(spinbox_max.get()),
         resolution=float(spinbox_increment.get()),
         orient="horizontal",
+        command=lambda _: sliderMoved(row_number),
         length=269,
     )
     slider.grid(row=row_number, column=20, columnspan=10)
@@ -217,8 +244,8 @@ def createScaleBlock(window, row_number):
 def updateWindow():
     """Syncs parameters between the Fusion360 workspace and the external window GUI"""
 
-    global scaleBlocks, parameters, window, last_num_parameters, entry_add_value, entry_add_name
-    global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment
+    global scaleBlocks, parameters, window, last_num_parameters, entry_add_value, entry_add_name, sliders_lock
+    global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment, sliders_moved
 
     try:
         product = app.activeProduct
@@ -311,7 +338,11 @@ def updateWindow():
                 )
 
                 spinbox_min = ttk.Spinbox(
-                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                    window_top,
+                    width=12,
+                    command=queueSettingsUpdate,
+                    from_=-10000,
+                    to=10000,
                 )
                 spinbox_min.grid(
                     row=1,
@@ -335,7 +366,11 @@ def updateWindow():
                 )
 
                 spinbox_max = ttk.Spinbox(
-                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                    window_top,
+                    width=12,
+                    command=queueSettingsUpdate,
+                    from_=-10000,
+                    to=10000,
                 )
                 spinbox_max.grid(
                     row=1,
@@ -359,7 +394,11 @@ def updateWindow():
                 )
 
                 spinbox_increment = ttk.Spinbox(
-                    window_top, width=12, command=queueSettingsUpdate, from_=0, to=10000
+                    window_top,
+                    width=12,
+                    command=queueSettingsUpdate,
+                    from_=-10000,
+                    to=10000,
                 )
                 spinbox_increment.grid(
                     row=1,
@@ -384,20 +423,47 @@ def updateWindow():
                     row=1, column=0, columnspan=70, padx=(10, 10), pady=(0, 10)
                 )
 
-                for i, _ in enumerate(parameters):
-                    scaleBlocks.append(createScaleBlock(window_bottom, i))
-                    scaleBlocks[i][0].set(parameters.item(i).value * 10)
+                for row_number, _ in enumerate(parameters):
+                    scaleBlocks.append(createScaleBlock(window_bottom, row_number))
+                    sliders_moved.append(True)
+                    sliders_lock.append(True)
+                    scaleBlocks[row_number][0].set(
+                        parameters.item(row_number).value * 10
+                    )
+                    param_val = parameters.item(row_number)
+
+                    if param_val.value * 10 > float(spinbox_max.get()):
+                        spinbox_max.delete(0, 20)
+                        spinbox_max.insert(0, "%g" % (param_val.value * 10))
+                        updateSettings()
+                        scaleBlocks[row_number][0].set(param_val.value * 10)
+                    elif param_val.value * 10 < float(spinbox_min.get()):
+                        spinbox_min.delete(0, 20)
+                        spinbox_min.insert(0, "%g" % (param_val.value * 10))
+                        updateSettings()
+                        scaleBlocks[row_number][0].set(param_val.value * 10)
 
         if len(parameters) == len(scaleBlocks):
-            for i, _ in enumerate(parameters):
+            for row_number, _ in enumerate(parameters):
                 if (
-                    round(parameters.item(i).value, 2)
-                    != round(scaleBlocks[i][0].get() / 10, 2)
+                    round(parameters.item(row_number).value, 2)
+                    != round(scaleBlocks[row_number][0].get() / 10, 2)
                     and len(ui.activeSelections) == 0
+                    and sliders_moved[row_number]
                 ):
-                    slider_val = scaleBlocks[i][0].get() / 10
-                    param_val = parameters.item(i)
+                    param_val = parameters.item(row_number)
+                    slider_val = scaleBlocks[row_number][0].get() / 10
                     param_val.value = round(slider_val, 2)
+
+                elif round(parameters.item(row_number).value, 2) == round(
+                    scaleBlocks[row_number][0].get() / 10, 2
+                ):
+                    sliders_moved[row_number] = False
+                    sliders_lock[row_number] = False
+
+                elif not sliders_moved[row_number]:
+                    param_val = parameters.item(row_number)
+                    scaleBlocks[row_number][0].set(param_val.value * 10)
 
         window.after(150, updateWindow)  # Runs the function again after a time
 
@@ -419,8 +485,8 @@ def externalWindow():
 
     try:
 
-        global parameters, scaleBlocks, window, last_num_parameters, entry_add_value
-        global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment, entry_add_name
+        global parameters, scaleBlocks, window, last_num_parameters, entry_add_value, sliders_lock
+        global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment, entry_add_name, sliders_moved
 
         entry_add_value = None
         spinbox_max = None
@@ -431,6 +497,8 @@ def externalWindow():
         is_settings_update = False
         entry_add_comment = None
         entry_add_name = None
+        sliders_moved = []
+        sliders_lock = []
 
         window = Tk()
         window.title("Advanced Parameters")
@@ -443,23 +511,26 @@ def externalWindow():
         last_num_parameters = None
         updateWindow()
 
-        # window.columnconfigure(1, weight=1)  # Allow widgets to expand to full width
         window.protocol("WM_DELETE_WINDOW", onClosing)
 
         window.mainloop()  # Starts the gui (blocking method)
 
         # Resets created global variables after the gui is closed
-        del scaleBlocks
-        del window
-        del last_num_parameters
-        del entry_add_value
-        del parameters
-        del spinbox_min
-        del spinbox_max
-        del spinbox_increment
-        del is_settings_update
-        del entry_add_comment
-        del entry_add_name
+        del (
+            scaleBlocks,
+            window,
+            last_num_parameters,
+            entry_add_value,
+            parameters,
+            spinbox_min,
+            spinbox_max,
+            spinbox_increment,
+            is_settings_update,
+            entry_add_comment,
+            entry_add_name,
+            sliders_moved,
+            sliders_lock,
+        )
 
     except:
         messagebox.showerror("Error", traceback.format_exc())
