@@ -57,11 +57,12 @@ Tested on:
 - To remove a comment enter a space character in the comment entry field and click **Update**
 - Negative values are possible
 - A mouse scroll wheel can be used to change slider settings
+- The default unit is millimetres. To create a degrees slider add "deg" to the end of entered values
 
 ### Limitations
 
-- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the Shift key while a slider is moved.
+- At this stage only millimetres and degrees are supported
+- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the Shift key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
 - Parameters can not be updated while anything in the workspace is selected
 - This add-in only works up to five decimal places
 - Changing the increment can change the slider value(s) to the nearest increment multiple
-- All units are assumed to be in millimetres or degrees

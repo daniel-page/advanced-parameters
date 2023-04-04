@@ -8,6 +8,7 @@ from tkinter import ttk
 from tkinter import messagebox
 import threading
 import traceback
+import math
 
 app = adsk.core.Application.get()
 ui = app.userInterface
@@ -41,9 +42,15 @@ def addParameter(name, value, comment):
 
     try:
         if len(ui.activeSelections) == 0:
-            parameters.add(
-                name, adsk.core.ValueInput.createByString(value), "mm", comment
-            )
+            if "deg" in value:
+                parameters.add(
+                    name, adsk.core.ValueInput.createByString(value), "deg", comment
+                )
+            else:
+                parameters.add(
+                    name, adsk.core.ValueInput.createByString(value), "mm", comment
+                )
+
         else:
             messagebox.showwarning(
                 "Warning", "Cannot update with selections in the workspace."
@@ -124,7 +131,11 @@ def updateParameter(row_number, slider, comment, name):
                     spinbox_increment.insert(0, entry_add_value_tmp_dp)
                     updateSettings()
 
-                slider.set(parameters.item(row_number).value * 10)
+                if parameters.item(row_number).unit == "deg":
+                    slider.set(parameters.item(row_number).value * 180 / math.pi)
+                else:
+                    slider.set(parameters.item(row_number).value * 10)
+
             else:
                 messagebox.showwarning(
                     "Warning", "Cannot update with selections in the workspace."
@@ -510,29 +521,40 @@ def updateWindow():
                         spinbox_increment.insert(0, entry_add_value_tmp_dp)
                         updateSettings()
 
-                    scaleBlocks[row_number][0].set(
-                        parameters.item(row_number).value * 10
-                    )
+                    if parameters.item(row_number).unit == "deg":
+                        scaleBlocks[row_number][0].set(
+                            parameters.item(row_number).value * 180 / math.pi
+                        )
+                    else:
+                        scaleBlocks[row_number][0].set(
+                            parameters.item(row_number).value * 10
+                        )
+
             else:
                 window_bottom.grid_remove()
 
         if len(parameters) == len(scaleBlocks):
             for row_number, _ in enumerate(parameters):
+                if parameters.item(row_number).unit == "deg":
+                    multiplier = 180 / math.pi
+                else:
+                    multiplier = 10
+
                 if (
                     round(parameters.item(row_number).value, 5)
-                    != round(scaleBlocks[row_number][0].get() / 10, 5)
+                    != round(scaleBlocks[row_number][0].get() / multiplier, 5)
                     and len(ui.activeSelections) == 0
                     and sliders_moved[row_number]
                 ):
                     if not shift_key_pushed:
                         param_val = parameters.item(row_number)
-                        slider_val = scaleBlocks[row_number][0].get() / 10
+                        slider_val = scaleBlocks[row_number][0].get() / multiplier
                         param_val.value = round(slider_val, 5)
                     selected_flag = False
 
                 elif (
                     round(parameters.item(row_number).value, 5)
-                    != round(scaleBlocks[row_number][0].get() / 10, 5)
+                    != round(scaleBlocks[row_number][0].get() / multiplier, 5)
                     and len(ui.activeSelections) > 0
                     and not selected_flag
                 ):
@@ -541,13 +563,13 @@ def updateWindow():
                     )
                     selected_flag = True
                 elif round(parameters.item(row_number).value, 5) == round(
-                    scaleBlocks[row_number][0].get() / 10, 5
+                    scaleBlocks[row_number][0].get() / multiplier, 5
                 ):
                     sliders_moved[row_number] = False
 
                 elif not sliders_moved[row_number]:
                     param_val = parameters.item(row_number)
-                    scaleBlocks[row_number][4].set(param_val.value * 10)
+                    scaleBlocks[row_number][4].set(param_val.value * multiplier)
 
         window.after(150, updateWindow)  # Runs the function again after a time
 
