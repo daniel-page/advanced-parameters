@@ -332,6 +332,31 @@ def loadToolbar():
     )
     button_add.grid(row=0, column=60, padx=(0, 0), columnspan=10)
 
+    entry_add_name.bind(
+        "<Return>",
+        lambda _: addParameter(
+            entry_add_name.get(),
+            entry_add_value.get(),
+            entry_add_comment.get(),
+        ),
+    )
+    entry_add_value.bind(
+        "<Return>",
+        lambda _: addParameter(
+            entry_add_name.get(),
+            entry_add_value.get(),
+            entry_add_comment.get(),
+        ),
+    )
+    entry_add_comment.bind(
+        "<Return>",
+        lambda _: addParameter(
+            entry_add_name.get(),
+            entry_add_value.get(),
+            entry_add_comment.get(),
+        ),
+    )
+
     spinbox_increment = ttk.Spinbox(
         window_top,
         width=12,
@@ -403,8 +428,8 @@ def loadToolbar():
     spinbox_max.delete(0)
     spinbox_max.insert(0, str(spinbox_max_value))
 
-    label_add_min = Label(window_top, text="Increment: ", anchor="w")
-    label_add_min.grid(
+    label_add_increment = Label(window_top, text="Increment: ", anchor="w")
+    label_add_increment.grid(
         row=1,
         column=40,
         sticky=W,
@@ -415,6 +440,10 @@ def loadToolbar():
 
     button_apply = Button(window_top, text="Apply", width=6, command=updateSettings)
     button_apply.grid(row=1, column=60, padx=(0, 0), pady=(6, 0), columnspan=10)
+
+    spinbox_min.bind("<Return>", lambda _: updateSettings())
+    spinbox_max.bind("<Return>", lambda _: updateSettings())
+    spinbox_increment.bind("<Return>", lambda _: updateSettings())
 
 
 def updateWindow():
