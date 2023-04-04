@@ -98,15 +98,30 @@ def updateParameter(row_number, slider, comment, name):
             if len(ui.activeSelections) == 0:
                 parameters.item(row_number).expression = value_input
 
-                if parameters.item(row_number).value > float(spinbox_max.get()):
+                if float(entry_add_value.get()) > float(spinbox_max.get()):
                     spinbox_max.delete(0, 20)
-                    spinbox_max.insert(0, parameters.item(row_number).value)
-                    spinbox_max_value = parameters.item(row_number).value
+                    spinbox_max.insert(0, float(entry_add_value.get()))
                     updateSettings()
-                elif parameters.item(row_number).value < float(spinbox_min.get()):
+                elif float(entry_add_value.get()) < float(spinbox_min.get()):
                     spinbox_min.delete(0, 20)
-                    spinbox_min.insert(0, parameters.item(row_number).value)
-                    spinbox_min_value = parameters.item(row_number).value
+                    spinbox_min.insert(0, float(entry_add_value.get()))
+                    updateSettings()
+
+                spinbox_increment_value_tmp = spinbox_increment.get()
+                spinbox_increment_value_tmp_n = spinbox_increment_value_tmp[::-1].find(
+                    "."
+                )
+                spinbox_increment_value_tmp_dp = (
+                    1 * 10**-spinbox_increment_value_tmp_n
+                )
+
+                entry_add_value_tmp = entry_add_value.get()
+                entry_add_value_tmp_n = entry_add_value_tmp[::-1].find(".")
+                entry_add_value_tmp_dp = 1 * 10**-entry_add_value_tmp_n
+
+                if entry_add_value_tmp_dp < spinbox_increment_value_tmp_dp:
+                    spinbox_increment.delete(0, 20)
+                    spinbox_increment.insert(0, entry_add_value_tmp_dp)
                     updateSettings()
 
                 slider.set(parameters.item(row_number).value * 10)
@@ -124,7 +139,7 @@ def updateParameter(row_number, slider, comment, name):
 def updateSettings():
     """Updates window to reflect changed settings"""
 
-    global scaleBlocks, spinbox_min, spinbox_max, spinbox_increment, spinbox_min_value, spinbox_max_value, spinbox_increment_value
+    global scaleBlocks, spinbox_min, spinbox_max, spinbox_increment
 
     try:
         if (
@@ -142,15 +157,12 @@ def updateSettings():
                     to=float(spinbox_max.get()),
                     resolution=float(spinbox_increment.get()),
                 )
-                spinbox_increment_value = float(spinbox_increment.get())
                 scaleBlocks[row_number][1].configure(
                     text="%g" % (float(spinbox_min.get()))
                 )
-                spinbox_min_value = float(spinbox_min.get())
                 scaleBlocks[row_number][2].configure(
                     text="%g" % (float(spinbox_max.get()))
                 )
-                spinbox_max_value = float(spinbox_max.get())
 
     except ValueError as err:
         messagebox.showwarning("Value Error", err)
@@ -410,7 +422,7 @@ def updateWindow():
 
     global scaleBlocks, parameters, window, last_num_parameters, entry_add_value, entry_add_name
     global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment
-    global sliders_moved, spinbox_min_value, spinbox_max_value, spinbox_increment_value, selected_flag, window_bottom
+    global sliders_moved, selected_flag, window_bottom, shift_key_pushed
 
     try:
         product = app.activeProduct
@@ -439,23 +451,41 @@ def updateWindow():
                 for row_number, _ in enumerate(parameters):
                     scaleBlocks.append(createScaleBlock(row_number))
                     sliders_moved.append(True)
-                    scaleBlocks[row_number][0].set(
-                        parameters.item(row_number).value * 10
-                    )
+
                     param_val = parameters.item(row_number)
 
                     if param_val.value * 10 > float(spinbox_max.get()):
                         spinbox_max.delete(0, 20)
                         spinbox_max.insert(0, "%g" % (param_val.value * 10))
-                        spinbox_max_value = param_val.value * 10
                         updateSettings()
                         scaleBlocks[row_number][0].set(param_val.value * 10)
                     elif param_val.value * 10 < float(spinbox_min.get()):
                         spinbox_min.delete(0, 20)
                         spinbox_min.insert(0, "%g" % (param_val.value * 10))
-                        spinbox_min_value = param_val.value * 10
                         updateSettings()
                         scaleBlocks[row_number][0].set(param_val.value * 10)
+
+                    spinbox_increment_value_tmp = spinbox_increment.get()
+                    spinbox_increment_value_tmp_n = spinbox_increment_value_tmp[
+                        ::-1
+                    ].find(".")
+                    spinbox_increment_value_tmp_dp = (
+                        1 * 10**-spinbox_increment_value_tmp_n
+                    )
+                    entry_add_value_tmp = "%g" % (round(param_val.value * 10, 5))
+                    entry_add_value_tmp_n = entry_add_value_tmp[::-1].find(".")
+                    entry_add_value_tmp_dp = 1 * 10**-entry_add_value_tmp_n
+
+                    if entry_add_value_tmp_dp < spinbox_increment_value_tmp_dp:
+                        spinbox_increment.delete(0, 20)
+                        spinbox_increment.insert(0, entry_add_value_tmp_dp)
+                        updateSettings()
+
+                    scaleBlocks[row_number][0].set(
+                        parameters.item(row_number).value * 10
+                    )
+            else:
+                window_bottom.grid_remove()
 
         if len(parameters) == len(scaleBlocks):
             for row_number, _ in enumerate(parameters):
@@ -465,9 +495,10 @@ def updateWindow():
                     and len(ui.activeSelections) == 0
                     and sliders_moved[row_number]
                 ):
-                    param_val = parameters.item(row_number)
-                    slider_val = scaleBlocks[row_number][0].get() / 10
-                    param_val.value = round(slider_val, 5)
+                    if not shift_key_pushed:
+                        param_val = parameters.item(row_number)
+                        slider_val = scaleBlocks[row_number][0].get() / 10
+                        param_val.value = round(slider_val, 5)
                     selected_flag = False
 
                 elif (
@@ -504,15 +535,32 @@ def onClosing():
     window.destroy()
 
 
+def down(e):
+    """Callback for when the shift key is pressed down"""
+
+    global shift_key_pushed
+
+    if shift_key_pushed == 0 and e.keycode == 16:
+        shift_key_pushed = 1
+
+
+def up(e):
+    """Callback for when the shift key is released"""
+
+    global shift_key_pushed
+
+    if shift_key_pushed == 1 and e.keycode == 16:
+        shift_key_pushed = 0
+
+
 def externalWindow():
     """Opens and intialises an external window"""
 
     try:
 
         global parameters, scaleBlocks, window, last_num_parameters, entry_add_value, spinbox_min_value, spinbox_max_value
-        global spinbox_increment_value, selected_flag
-        global spinbox_min, spinbox_max, spinbox_increment, is_settings_update, entry_add_comment, entry_add_name, sliders_moved
-        global window_top, window_bottom
+        global spinbox_increment_value, selected_flag, spinbox_min, spinbox_max, spinbox_increment, is_settings_update
+        global entry_add_comment, entry_add_name, sliders_moved, window_top, window_bottom, shift_key_pushed
 
         # Default values for global variables
         entry_add_value = None
@@ -542,6 +590,10 @@ def externalWindow():
         window.resizable(width=False, height=False)
         window.attributes("-topmost", True)
         window.protocol("WM_DELETE_WINDOW", onClosing)
+
+        shift_key_pushed = 0
+        window.bind("<KeyPress>", down)
+        window.bind("<KeyRelease>", up)
 
         loadToolbar()
 
