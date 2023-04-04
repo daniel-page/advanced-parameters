@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"addin",
+	"id":	"",
+	"author":	"Daniel Page",
+	"description":	{
+		"":	"Opens an external window with advanced parameter settings."
+	},
+	"version":	"1.0",
+	"runOnStartup":	true,
+	"supportedOS":	"windows",
+	"editEnabled":	true
+}
