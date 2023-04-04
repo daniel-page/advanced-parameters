@@ -27,7 +27,7 @@ Tested on:
 
 ## Installation
 
-1. Download [this repository](https://github.com/daniel-page/advanced-parameters-fusion-360-add-in/archive/refs/heads/main.zip) and extract the archive
+1. Download [this repository](https://github.com/daniel-page/advanced-parameters/releases/latest/download/advanced-parameters.zip) and extract the archive
 2. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > Green **+** button
 3. Locate and choose the repository directory
 4. Select **Run on Startup** (Optional)
@@ -62,7 +62,7 @@ Tested on:
 ### Limitations
 
 - At this stage only millimetres and degrees are supported
-- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the Shift key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
+- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the **Shift** key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
 - Parameters can not be updated while anything in the workspace is selected
 - This add-in only works up to five decimal places
 - Changing the increment can change the slider value(s) to the nearest increment multiple
