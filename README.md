@@ -27,7 +27,7 @@ Tested on:
 
 ## Installation
 
-1. Download [this repository](https://github.com/daniel-page/advanced-parameters/archive/refs/heads/main.zip) and extract the archive
+1. Download the [source code from the latest release](https://github.com/daniel-page/advanced-parameters/archive/refs/tags/v1.0.zip) and extract the archive
 2. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > Green **+** button
 3. Locate and choose the repository directory
 4. Select **Run on Startup** (Optional)
