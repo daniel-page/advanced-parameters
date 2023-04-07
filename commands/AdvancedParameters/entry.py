@@ -38,19 +38,27 @@ local_handlers = []
 def addParameter(name, value, comment):
     """Adds a user parameter"""
 
-    global parameters
+    global parameters, entry_add_name, entry_add_value, entry_add_comment
 
     try:
         if len(ui.activeSelections) == 0:
             if "deg" in value:
                 parameters.add(
-                    name, adsk.core.ValueInput.createByString(value), "deg", comment
+                    name.strip(),
+                    adsk.core.ValueInput.createByString(value),
+                    "deg",
+                    comment,
                 )
             else:
                 parameters.add(
-                    name, adsk.core.ValueInput.createByString(value), "mm", comment
+                    name.strip(),
+                    adsk.core.ValueInput.createByString(value),
+                    "mm",
+                    comment,
                 )
-
+            entry_add_name.delete(0, "end")
+            entry_add_value.delete(0, "end")
+            entry_add_comment.delete(0, "end")
         else:
             messagebox.showwarning(
                 "Warning", "Cannot update with selections in the workspace."
@@ -76,42 +84,35 @@ def deleteParameter(row_number):
 def updateParameter(row_number, slider, comment, name):
     """Update the value/comment/name of a parameter"""
 
-    global scaleBlocks, parameters, entry_add_value, entry_add_comment
-    global entry_add_name, spinbox_max, spinbox_min, spinbox_min_value, spinbox_max_value
+    if len(ui.activeSelections) == 0:
 
-    comment_input = entry_add_comment.get()
-    if comment_input == " ":
-        scaleBlocks[row_number][3].grid_remove()
-    elif len(comment_input) > 0:
-        comment.configure(text=comment_input)
-        parameters[row_number].comment = comment_input
-        scaleBlocks[row_number][3].grid(
-            row=1,
-            column=0,
-            sticky=W,
-            pady=(0, 0),
-            padx=(0, 0),
-            columnspan=10,
-        )
+        global scaleBlocks, parameters, entry_add_value, entry_add_comment
+        global entry_add_name, spinbox_max, spinbox_min, spinbox_min_value, spinbox_max_value
 
-    name_input = entry_add_name.get()
-    if len(name_input) > 0:
-        name.configure(text=name_input)
-        parameters[row_number].name = name_input
+        name_input = entry_add_name.get().strip()
+        if len(name_input) > 0:
+            try:
+                for local_row_number, _ in enumerate(scaleBlocks):
+                    if name_input == parameters[local_row_number].name:
+                        raise TypeError
+                parameters[row_number].name = name_input
+                name.configure(text=name_input)
+                entry_add_name.delete(0, "end")
+            except TypeError:
+                messagebox.showwarning("Type Error", "Parameter name already exists.")
 
-    value_input = entry_add_value.get()
-    if len(value_input) > 0:
-        try:
-            if len(ui.activeSelections) == 0:
+        value_input = entry_add_value.get().strip()
+        if len(value_input) > 0:
+            try:
                 parameters.item(row_number).expression = value_input
 
-                if float(entry_add_value.get()) > float(spinbox_max.get()):
-                    spinbox_max.delete(0, 20)
-                    spinbox_max.insert(0, float(entry_add_value.get()))
+                if parameters.item(row_number).value > float(spinbox_max.get()):
+                    spinbox_max.delete(0, "end")
+                    spinbox_max.insert(0, parameters.item(row_number).value)
                     updateSettings()
-                elif float(entry_add_value.get()) < float(spinbox_min.get()):
-                    spinbox_min.delete(0, 20)
-                    spinbox_min.insert(0, float(entry_add_value.get()))
+                elif parameters.item(row_number).value < float(spinbox_min.get()):
+                    spinbox_min.delete(0, "end")
+                    spinbox_min.insert(0, parameters.item(row_number).value)
                     updateSettings()
 
                 spinbox_increment_value_tmp = spinbox_increment.get()
@@ -121,13 +122,14 @@ def updateParameter(row_number, slider, comment, name):
                 spinbox_increment_value_tmp_dp = (
                     1 * 10**-spinbox_increment_value_tmp_n
                 )
-
-                entry_add_value_tmp = entry_add_value.get()
+                entry_add_value_tmp = "%g" % (
+                    round(parameters.item(row_number).value * 10, 5)
+                )
                 entry_add_value_tmp_n = entry_add_value_tmp[::-1].find(".")
                 entry_add_value_tmp_dp = 1 * 10**-entry_add_value_tmp_n
 
                 if entry_add_value_tmp_dp < spinbox_increment_value_tmp_dp:
-                    spinbox_increment.delete(0, 20)
+                    spinbox_increment.delete(0, "end")
                     spinbox_increment.insert(0, entry_add_value_tmp_dp)
                     updateSettings()
 
@@ -136,15 +138,36 @@ def updateParameter(row_number, slider, comment, name):
                 else:
                     slider.set(parameters.item(row_number).value * 10)
 
-            else:
-                messagebox.showwarning(
-                    "Warning", "Cannot update with selections in the workspace."
-                )
+                entry_add_value.delete(0, "end")
 
-        except NameError as err:
-            messagebox.showwarning("Name Error", err)
-        except TypeError as err:
-            messagebox.showwarning("Type Error", err)
+            except NameError as err:
+                messagebox.showwarning("Name Error", err)
+            except TypeError as err:
+                messagebox.showwarning("Type Error", err)
+            except RuntimeError as err:
+                messagebox.showwarning("Runtime Error", err)
+
+        comment_input = entry_add_comment.get()
+        if comment_input == " ":
+            scaleBlocks[row_number][3].grid_remove()
+            entry_add_comment.delete(0, "end")
+        elif len(comment_input) > 0:
+            comment.configure(text=comment_input)
+            parameters[row_number].comment = comment_input
+            scaleBlocks[row_number][3].grid(
+                row=1,
+                column=0,
+                sticky=W,
+                pady=(0, 0),
+                padx=(0, 0),
+                columnspan=10,
+            )
+            entry_add_comment.delete(0, "end")
+
+    else:
+        messagebox.showwarning(
+            "Warning", "Cannot update with selections in the workspace."
+        )
 
 
 def updateSettings():
@@ -242,7 +265,7 @@ def createScaleBlock(row_number):
         resolution=float(spinbox_increment.get()),
         orient="horizontal",
         command=lambda _: sliderMoved(row_number),
-        length=269,
+        length=260,
         variable=slider_value,
     )
     slider.grid(row=row_number, column=20, columnspan=10)
@@ -295,7 +318,7 @@ def loadToolbar():
 
     window_top.grid(row=0, column=0, columnspan=70, padx=(10, 10), pady=(10, 0))
 
-    label_add_name = Label(window_top, text="Name: ", anchor="w")
+    label_add_name = Label(window_top, text="Name:", anchor="w")
     label_add_name.grid(row=0, column=0, sticky=W, padx=(0, 5), columnspan=10)
 
     entry_add_name = Entry(
@@ -307,7 +330,7 @@ def loadToolbar():
     )
     entry_add_name.grid(row=0, column=10, sticky=W, padx=(0, 20), columnspan=10)
 
-    label_add_value = Label(window_top, text="Value: ", anchor="w")
+    label_add_value = Label(window_top, text="Value:", anchor="w")
     label_add_value.grid(row=0, column=20, sticky=W, padx=(0, 5), columnspan=10)
 
     entry_add_value = Entry(
@@ -319,7 +342,7 @@ def loadToolbar():
     )
     entry_add_value.grid(row=0, column=30, sticky=W, padx=(0, 20), columnspan=10)
 
-    label_add_comment = Label(window_top, text="Comment: ", anchor="w")
+    label_add_comment = Label(window_top, text="Comment:", anchor="w")
     label_add_comment.grid(row=0, column=40, sticky=W, padx=(0, 5), columnspan=10)
 
     entry_add_comment = Entry(
@@ -378,7 +401,7 @@ def loadToolbar():
     spinbox_increment.grid(
         row=1,
         column=50,
-        sticky=W,
+        sticky=W + E,
         padx=(0, 20),
         pady=(6, 0),
         columnspan=10,
@@ -386,7 +409,7 @@ def loadToolbar():
     spinbox_increment.delete(0)
     spinbox_increment.insert(0, str(spinbox_increment_value))
 
-    label_add_min = Label(window_top, text="Min: ", anchor="w")
+    label_add_min = Label(window_top, text="Min:", anchor="w")
     label_add_min.grid(
         row=1, column=0, sticky=W, padx=(0, 5), pady=(6, 0), columnspan=10
     )
@@ -410,7 +433,7 @@ def loadToolbar():
     spinbox_min.delete(0)
     spinbox_min.insert(0, str(spinbox_min_value))
 
-    label_add_max = Label(window_top, text="Max: ", anchor="w")
+    label_add_max = Label(window_top, text="Max:", anchor="w")
     label_add_max.grid(
         row=1,
         column=20,
@@ -431,7 +454,7 @@ def loadToolbar():
     spinbox_max.grid(
         row=1,
         column=30,
-        sticky=W,
+        sticky=W + E,
         padx=(0, 20),
         pady=(6, 0),
         columnspan=10,
@@ -439,7 +462,7 @@ def loadToolbar():
     spinbox_max.delete(0)
     spinbox_max.insert(0, str(spinbox_max_value))
 
-    label_add_increment = Label(window_top, text="Increment: ", anchor="w")
+    label_add_increment = Label(window_top, text="Increment:", anchor="w")
     label_add_increment.grid(
         row=1,
         column=40,
@@ -495,12 +518,12 @@ def updateWindow():
                     param_val = parameters.item(row_number)
 
                     if param_val.value * 10 > float(spinbox_max.get()):
-                        spinbox_max.delete(0, 20)
+                        spinbox_max.delete(0, "end")
                         spinbox_max.insert(0, "%g" % (param_val.value * 10))
                         updateSettings()
                         scaleBlocks[row_number][0].set(param_val.value * 10)
                     elif param_val.value * 10 < float(spinbox_min.get()):
-                        spinbox_min.delete(0, 20)
+                        spinbox_min.delete(0, "end")
                         spinbox_min.insert(0, "%g" % (param_val.value * 10))
                         updateSettings()
                         scaleBlocks[row_number][0].set(param_val.value * 10)
@@ -517,7 +540,7 @@ def updateWindow():
                     entry_add_value_tmp_dp = 1 * 10**-entry_add_value_tmp_n
 
                     if entry_add_value_tmp_dp < spinbox_increment_value_tmp_dp:
-                        spinbox_increment.delete(0, 20)
+                        spinbox_increment.delete(0, "end")
                         spinbox_increment.insert(0, entry_add_value_tmp_dp)
                         updateSettings()
 
