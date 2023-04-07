@@ -28,18 +28,18 @@ Tested on:
 ## Installation
 
 1. Download the [source code from the latest release](https://github.com/daniel-page/advanced-parameters/archive/refs/tags/v1.0.zip) and extract the archive
-2. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > Green **+** button
-3. Locate and choose the repository directory
-4. Select **Run on Startup** (Optional)
+2. To permanently install the add-in copy its directory to `C:\Users\%Username%\AppData\Roaming\Autodesk\Autodesk Fusion 360\API\AddIns`
+3. OR to open it from its existing location go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > Green **+** button
 
 ## Running
 
 1. Go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab
 2. Click **Advanced Parameters** in the list to highlight
-3. Click **Run**
-4. Go to the **SOLID** toolbar tab
-5. Click on the red **fx** icon in the **MODIFY** panel
-6. A window will load
+3. Select **Run on Startup** (Optional)
+4. Click **Run**
+5. Go to the **SOLID** toolbar tab
+6. Click on the red **fx** icon in the **MODIFY** panel
+7. A window will load
 
 ## Using the Add-in
 
@@ -64,5 +64,6 @@ Tested on:
 - At this stage only millimetres and degrees are supported
 - Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the **Shift** key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
 - Parameters can not be updated while anything in the workspace is selected
+- Parameters in the workspace will not update when the Fusion 360 parameters window is open (until it is closed)
 - This add-in only works up to five decimal places
 - Changing the increment can change the slider value(s) to the nearest increment multiple
