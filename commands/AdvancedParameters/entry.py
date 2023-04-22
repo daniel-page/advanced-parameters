@@ -92,14 +92,27 @@ def updateParameter(row_number, slider, comment, name):
         name_input = entry_add_name.get().strip()
         if len(name_input) > 0:
             try:
+                # Check to see if a parameter with this name already exists
                 for local_row_number, _ in enumerate(scaleBlocks):
                     if name_input == parameters[local_row_number].name:
                         raise TypeError
+
+                # Update the parameter name in the workspace
                 parameters[row_number].name = name_input
+
+                # Check to see if parameter name change successful
+                if parameters[row_number].name != name_input:
+                    raise TypeError
+
+                # Update parameter name in gui
                 name.configure(text=name_input)
+
+                # Remove text in text entry field
                 entry_add_name.delete(0, "end")
             except TypeError:
-                messagebox.showwarning("Type Error", "Parameter name already exists.")
+                messagebox.showwarning(
+                    "Type Error", "Parameter name already exists or is invalid."
+                )
 
         value_input = entry_add_value.get().strip()
         if len(value_input) > 0:
