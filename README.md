@@ -23,8 +23,10 @@ An add-in for Autodesk Fusion 360 that provides advanced parameter options to he
 
 Tested on:
 
-- Windows 10 Pro 22H2 (19045.2604)
-- Autodesk Fusion 360 v2.0.15509 x86_64
+| #   | Operating System                 | Fusion 360 Version | Advanced Parameters Version(s) |
+| :-- | :------------------------------- | :----------------- | :----------------------------- |
+| 1   | Windows 10 Pro 22H2 (19045.2604) | 2.0.15509 x86_64   | 1.1                            |
+| 2   | Windows 10 Pro 22H2 (19045.2846) | 2.0.16009 x86_64   | 1.1                            |
 
 ## Installation
 
