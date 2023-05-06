@@ -12,6 +12,7 @@ An add-in for Autodesk Fusion 360 that provides advanced parameter options to he
 - Slider bars to intuitively adjust user parameters (click, drag or scroll)
 - Add, remove or update user parameters
 - Automatic syncing of parameters between the workspace and the add-in window
+- Automatic adjustment of min/max/increment of sliders based existing/new parameters
 - The window stays open and updates while sketches are edited or if designs are switched/opened
 - The window stays on top of other windows
 - Parameters can be changed in the **Render** workspace
