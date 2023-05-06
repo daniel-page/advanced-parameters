@@ -118,13 +118,13 @@ def updateParameter(row_number, slider, comment, name):
             try:
                 parameters.item(row_number).expression = value_input
 
-                if parameters.item(row_number).value > float(spinbox_max.get()):
+                if parameters.item(row_number).value * 10 > float(spinbox_max.get()):
                     spinbox_max.delete(0, "end")
-                    spinbox_max.insert(0, parameters.item(row_number).value)
+                    spinbox_max.insert(0, parameters.item(row_number).value * 10)
                     updateSettings()
-                elif parameters.item(row_number).value < float(spinbox_min.get()):
+                elif parameters.item(row_number).value * 10 < float(spinbox_min.get()):
                     spinbox_min.delete(0, "end")
-                    spinbox_min.insert(0, parameters.item(row_number).value)
+                    spinbox_min.insert(0, parameters.item(row_number).value * 10)
                     updateSettings()
 
                 spinbox_increment_value_tmp = spinbox_increment.get()
@@ -198,8 +198,7 @@ def updateSettings():
             spinbox_max.configure(increment=float(spinbox_increment.get()))
 
             for row_number, _ in enumerate(scaleBlocks):
-
-                sliderMoved(row_number)
+                sliderMoved(row_number)  # Updates the rounding of workspace parameters
 
                 scaleBlocks[row_number][0].configure(
                     from_=float(spinbox_min.get()),
