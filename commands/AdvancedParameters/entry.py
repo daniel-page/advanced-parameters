@@ -38,33 +38,32 @@ local_handlers = []
 def addParameter(name, value, comment):
     """Adds a user parameter"""
 
-    global parameters, entry_add_name, entry_add_value, entry_add_comment
-
     try:
-        if len(ui.activeSelections) == 0:
-            if "deg" in value:
-                parameters.add(
-                    name.strip(),
-                    adsk.core.ValueInput.createByString(value),
-                    "deg",
-                    comment,
-                )
-            else:
-                parameters.add(
-                    name.strip(),
-                    adsk.core.ValueInput.createByString(value),
-                    "mm",
-                    comment,
-                )
-            entry_add_name.delete(0, "end")
-            entry_add_value.delete(0, "end")
-            entry_add_comment.delete(0, "end")
-        else:
-            messagebox.showwarning(
-                "Warning", "Cannot update with selections in the workspace."
-            )
-    except RuntimeError as err:
-        messagebox.showwarning("Runtime Error", err)
+        global parameters, entry_add_name, entry_add_value, entry_add_comment
+
+        if len(ui.activeSelections) > 0:
+            raise ValueError("Cannot update with selections in the workspace.")
+
+        unit_type = "mm"
+        if "deg" in value:
+            unit_type = "deg"
+
+        parameters.add(
+            name.strip(),
+            adsk.core.ValueInput.createByString(value),
+            unit_type,
+            comment,
+        )
+
+        entry_add_name.delete(0, "end")
+        entry_add_value.delete(0, "end")
+        entry_add_comment.delete(0, "end")
+
+    except ValueError as err:
+        messagebox.showwarning("Value Error", err)
+
+    except Exception as err:
+        messagebox.showwarning("Error", err)
 
 
 def deleteParameter(row_number):
@@ -199,6 +198,9 @@ def updateSettings():
             spinbox_max.configure(increment=float(spinbox_increment.get()))
 
             for row_number, _ in enumerate(scaleBlocks):
+
+                sliderMoved(row_number)
+
                 scaleBlocks[row_number][0].configure(
                     from_=float(spinbox_min.get()),
                     to=float(spinbox_max.get()),
