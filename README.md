@@ -49,7 +49,7 @@ Tested on:
 - Use the top toolbar to add a parameter, update a parameter or change slider settings
 - Existing parameters can be updated by entries in the toolbar followed by clicking **Update**
 - Drag a slider left/right, use a mouse scroll wheel or click left/right of the slider to change the value
-- Click **Delete** to remove a parameter
+- Click **Delete** to remove a parameter (this will only work if the parameter is not used in the workspace)
 
 ### Tips
 
@@ -65,8 +65,8 @@ Tested on:
 ### Limitations
 
 - At this stage only millimetres and degrees are supported
-- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to use pause syncing by holding down the **Shift** key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
-- Parameters can not be updated while anything in the workspace is selected
+- Complex designs will slow down the responsiveness of the slider. For these, it is recommended to pause syncing by holding down the **Shift** key while a slider is moved or entering sketches so the whole model does not need to be updated for every change.
+- Parameters cannot be updated while anything in the workspace is selected
 - Parameters in the workspace will not update when the Fusion 360 parameters window is open (until it is closed)
 - This add-in only works up to five decimal places
 - Changing the increment can change the slider value(s) to the nearest increment multiple
