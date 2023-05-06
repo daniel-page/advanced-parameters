@@ -26,11 +26,11 @@ Tested on:
 | #   | Operating System                 | Fusion 360 Version | Advanced Parameters Version(s) |
 | :-- | :------------------------------- | :----------------- | :----------------------------- |
 | 1   | Windows 10 Pro 22H2 (19045.2604) | 2.0.15509 x86_64   | 1.1                            |
-| 2   | Windows 10 Pro 22H2 (19045.2846) | 2.0.16009 x86_64   | 1.1                            |
+| 2   | Windows 10 Pro 22H2 (19045.2846) | 2.0.16009 x86_64   | 1.1, 1.2                       |
 
 ## Installation
 
-1. Download the [source code from the latest release](https://github.com/daniel-page/advanced-parameters/archive/refs/tags/v1.1.zip) and extract the archive
+1. Download the [source code from the latest release](https://github.com/daniel-page/advanced-parameters/archive/refs/tags/v1.2.zip) and extract the archive
 2. To permanently install the add-in copy its INNER directory containing the source code to `C:\Users\%Username%\AppData\Roaming\Autodesk\Autodesk Fusion 360\API\AddIns`
 3. OR to open it from its existing location go to **UTILITIES** toolbar tab > **ADD-INS** > **Add-Ins** tab > Green **+** button and locate the INNER directory containing the source code
 
