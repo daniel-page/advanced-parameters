@@ -27,7 +27,7 @@ Tested on:
 | :-- | :------------------------------- | :----------------- | :----------------------------- |
 | 1   | Windows 10 Pro 22H2 (19045.2604) | 2.0.15509 x86_64   | 1.1                            |
 | 2   | Windows 10 Pro 22H2 (19045.2846) | 2.0.16009 x86_64   | 1.1, 1.2                       |
-| 3   | Windows 10 Pro 22H2 (19045.2846) | 2.0.16976 x86_64   | 1.2                            |
+| 3   | Windows 10 Pro 22H2 (19045.3324) | 2.0.16976 x86_64   | 1.2                            |
 
 ## Installation
 
@@ -61,7 +61,8 @@ Tested on:
 - To remove a comment enter a space character in the comment entry field and click **Update**
 - Negative values are possible
 - A mouse scroll wheel can be used to change slider settings
-- The default unit is millimetres. To create a degrees slider add "deg" to the end of entered values
+- The default unit is millimetres (mm)
+- To create a degrees slider add "deg" to the end of entered values
 
 ### Limitations
 
